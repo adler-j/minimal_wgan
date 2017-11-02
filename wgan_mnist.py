@@ -1,10 +1,11 @@
+"""Minimal implementation of Wasserstein GAN for MNIST."""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.contrib import layers
-
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets('MNIST_data')
+
 
 session = tf.InteractiveSession()
 
@@ -48,18 +49,19 @@ x_generated = generator(z)
 d_true = discriminator(x_true, reuse=False)
 d_generated = discriminator(x_generated, reuse=True)
 
-with tf.name_scope('loss'):
-    g_loss = tf.reduce_mean(d_generated)
-
-    epsilon = tf.random_uniform([], 0.0, 1.0)
+with tf.name_scope('regularizer'):
+    epsilon = tf.random_uniform([50, 1, 1, 1], 0.0, 1.0)
     x_hat = epsilon * x_true + (1 - epsilon) * x_generated
     d_hat = discriminator(x_hat, reuse=True)
 
-    ddx = tf.gradients(d_hat, x_hat)[0]
-    ddx = tf.sqrt(tf.reduce_sum(ddx ** 2, axis=1))
-    ddx = tf.reduce_mean((ddx - 1.0) ** 2)
+    gradients = tf.gradients(d_hat, x_hat)[0]
+    ddx = tf.sqrt(tf.reduce_sum(gradients ** 2, axis=[1, 2]))
+    d_regularizer = tf.reduce_mean((ddx - 1.0) ** 2)
 
-    d_loss = (tf.reduce_mean(d_true) - tf.reduce_mean(d_generated)) + 10 * ddx
+with tf.name_scope('loss'):
+    g_loss = tf.reduce_mean(d_generated)
+    d_loss = (tf.reduce_mean(d_true) - tf.reduce_mean(d_generated) +
+              10 * d_regularizer)
 
 with tf.name_scope('optimizer'):
     optimizer = tf.train.AdamOptimizer(learning_rate=1e-4, beta1=0, beta2=0.9)
@@ -71,8 +73,7 @@ with tf.name_scope('optimizer'):
 
 tf.global_variables_initializer().run()
 
-plt.figure('results')
-z_validate = np.random.randn(1, 128)
+mnist = input_data.read_data_sets('MNIST_data')
 
 for i in range(20000):
     batch = mnist.train.next_batch(50)
@@ -85,6 +86,9 @@ for i in range(20000):
 
     if i % 100 == 0:
         print('iter={}/20000'.format(i))
+        z_validate = np.random.randn(1, 128)
         generated = x_generated.eval(feed_dict={z: z_validate}).squeeze()
-        plt.imshow(generated, clim=[0, 1])
+
+        plt.figure('results')
+        plt.imshow(generated, clim=[0, 1], cmap='bone')
         plt.pause(0.001)
