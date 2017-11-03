@@ -5,7 +5,7 @@ This is a simple TensorFlow implementation of Wasserstein Generative Advesarial 
 
 Some example generated digits:
 
-![WGAN results](https://user-images.githubusercontent.com/2202312/32365134-e8a7d78e-c078-11e7-91c6-82cf9a11e7ea.png)
+![WGAN results](https://user-images.githubusercontent.com/2202312/32365318-b0ccc44a-c079-11e7-8fb1-6b1566c0bdc4.png)
 
 
 How to run
